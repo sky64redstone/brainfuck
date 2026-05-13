@@ -265,7 +265,7 @@ void bf_dump_state(struct bf_state* state) {
   }
 
   fprintf(stderr, "cell ptr: %d\n", state->cell_ptr);
-  fprintf(stderr, "cells:\n");
+  fprintf(stderr, "cells: (%i)\n", state->cells_count);
 
   if (state->cells) {
     for (size_t i = 0; i < state->cells_count; i++) {

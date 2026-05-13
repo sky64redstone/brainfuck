@@ -5,6 +5,7 @@
 #include "interpreter.h"
 
 char* file_in = NULL;
+int verbose = 0;
 
 int parse_arguments(int argc, char** argv) {
   struct arg_option options[] = {
@@ -15,6 +16,14 @@ int parse_arguments(int argc, char** argv) {
       .output = &file_in,
       .callback = NULL,
       .help = "Brainfuck source file"
+    },
+    {
+      .long_name = "verbose",
+      .short_name = 'v',
+      .type = arg_flag,
+      .output = &verbose,
+      .callback = NULL,
+      .help = "Enable dumping debug information to stderr"
     }
   };
 
@@ -49,14 +58,18 @@ int main(int argc, char** argv) {
   result = bf_init_state(&state, 32);
   if (result != 0) {
     fprintf(stderr, "bf_init_state failed because: %s\n", state.error);
-    bf_destroy_state(&state);
+    if (verbose) {
+      bf_dump_state(&state);
+    }
     return 1;
   }
 
   result = bf_load_code(&state, file_in);
   if (result != 0) {
     fprintf(stderr, "bf_load_code failed because: %s\n", state.error);
-    bf_destroy_state(&state);
+    if (verbose) {
+      bf_dump_state(&state);
+    }
     return 1;
   }
 
@@ -64,12 +77,16 @@ int main(int argc, char** argv) {
   /* we don't check for early exit, since we want to run all our code */
   if (result != 0) {
     fprintf(stderr, "bf_run_code failed because: %s\n", state.error);
-    bf_dump_state(&state);
+    if (verbose) {
+      bf_dump_state(&state);
+    }
     bf_destroy_state(&state);
     return 1;
   }
 
-  bf_dump_state(&state);
+  if (verbose) {
+    bf_dump_state(&state);
+  }
 
   bf_destroy_state(&state);
 
