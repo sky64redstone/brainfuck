@@ -9,7 +9,7 @@ char* file_in = NULL;
 int parse_arguments(int argc, char** argv) {
   struct arg_option options[] = {
     {
-      .long_name = NULL,
+      .long_name = "source",
       .short_name = 0,
       .type = arg_positional,
       .output = &file_in,

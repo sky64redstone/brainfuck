@@ -24,7 +24,7 @@ void arg_print_help(struct arg_parser* parser, const char* name) {
     struct arg_option* o = &parser->options[i];
 
     if (o->type == arg_positional) {
-      printf(" <%s>", o->long_name);
+      printf(" <%s>", o->long_name ? o->long_name : "arg");
     }
   }
 
