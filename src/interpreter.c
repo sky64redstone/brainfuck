@@ -33,6 +33,9 @@ int bf_init_state(struct bf_state* state, int initial_cells) {
     state->error = ERR_ALREADY_INIT;
     return 1;
   }
+  if (initial_cells <= 0) {
+    initial_cells = 32;
+  }
   state->source = NULL;
   state->src_len = 0;
   state->cells = calloc(initial_cells, sizeof(char));
@@ -85,11 +88,6 @@ int bf_load_code(struct bf_state* state, const char* filename) {
 }
 
 int bf_expand_cells(struct bf_state* state) {
-  if ((!bf_valid_state(state) & VALID_CELL)) {
-    state->error = ERR_NO_CELLS;
-    return 1;
-  }
-
   size_t new_size = state->cells_count << 1;
   char* new_cells = realloc(state->cells, new_size);
 
@@ -107,11 +105,6 @@ int bf_expand_cells(struct bf_state* state) {
 }
 
 char bf_next_instr(struct bf_state* state) {
-  if (!(bf_valid_state(state) & VALID_SRC)) {
-    state->error = ERR_NO_CODE;
-    return INSTR_INVALID;
-  }
-
   if (state->src_ptr >= state->src_len) {
     return INSTR_END;
   }
@@ -119,11 +112,6 @@ char bf_next_instr(struct bf_state* state) {
 }
 
 size_t bf_next_bracket(struct bf_state* state) {
-  if (!(bf_valid_state(state) & VALID_SRC)) {
-    state->error = ERR_NO_CODE;
-    return SIZE_MAX;
-  }
-
   size_t depth = 0;
 
   for (size_t i = state->src_ptr; i < state->src_len; i++) {
@@ -142,11 +130,6 @@ size_t bf_next_bracket(struct bf_state* state) {
 }
 
 size_t bf_prev_bracket(struct bf_state* state) {
-  if (!(bf_valid_state(state) & VALID_SRC)) {
-    state->error = ERR_NO_CODE;
-    return 1;
-  }
-
   size_t depth = 0;
 
   if (state->src_ptr < 2) {
@@ -173,6 +156,11 @@ size_t bf_prev_bracket(struct bf_state* state) {
 }
 
 int bf_run_code(struct bf_state* state, size_t instructions) {
+  if (bf_valid_state(state) != (VALID_SRC | VALID_CELL)) {
+    state->error = ERR_NO_CODE " and " ERR_NO_CELLS;
+    return 1;
+  }
+
   if (instructions == 0) {
     instructions = SIZE_MAX;
   }
@@ -258,10 +246,14 @@ int bf_run_code(struct bf_state* state, size_t instructions) {
 }
 
 void bf_dump_state(struct bf_state* state) {
-  fprintf(stderr, "\n=== dump ===\n");
+  fprintf(stderr, "=== dump ===\n");
 
   fprintf(stderr, "Program:\n");
-  fwrite(state->source, 1, state->src_len, stderr);
+  if (state->source) {
+    fwrite(state->source, 1, state->src_len, stderr);
+  } else {
+    fprintf(stderr, "<null>");
+  }
   fprintf(stderr, "\n");
 
   fprintf(stderr, "src_ptr: %zu / %zu\n", state->src_ptr, state->src_len);
@@ -275,16 +267,20 @@ void bf_dump_state(struct bf_state* state) {
   fprintf(stderr, "cell ptr: %d\n", state->cell_ptr);
   fprintf(stderr, "cells:\n");
 
-  for (size_t i = 0; i < state->cells_count; i++) {
-    if ((int)i == state->cell_ptr) {
-      fprintf(stderr, "[%3u]", state->cells[i]);
-    } else {
-      fprintf(stderr, " %3u ", state->cells[i]);
-    }
+  if (state->cells) {
+    for (size_t i = 0; i < state->cells_count; i++) {
+      if ((int)i == state->cell_ptr) {
+        fprintf(stderr, "[%3u]", state->cells[i]);
+      } else {
+        fprintf(stderr, " %3u ", state->cells[i]);
+      }
 
-    if ((i + 1) % 16 == 0) {
-      fprintf(stderr, "\n");
+      if ((i + 1) % 16 == 0) {
+        fprintf(stderr, "\n");
+      }
     }
+  } else {
+    fprintf(stderr, "<null>");
   }
 
   fprintf(stderr, "\n============\n");
